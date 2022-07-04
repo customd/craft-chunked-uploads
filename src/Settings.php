@@ -102,7 +102,7 @@ class Settings extends Model
    * @return array
    * @noinspection PhpUnused (Used in settings template)
    */
-  public function getMaxImageDimension(int $folderId): array
+  public function getMaxImageDimension(?int $folderId): array
   {
     if ($folderId === null) {
       return [null, null];
