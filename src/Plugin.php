@@ -12,6 +12,7 @@ use craft\base\Model;
 use craft\web\Request;
 use craft\awss3\Volume;
 use craft\awss3\S3Client;
+use craft\helpers\App;
 use craft\web\Application;
 use yii\web\HeaderCollection;
 use yii\base\InvalidConfigException;
@@ -44,6 +45,8 @@ class Plugin extends \craft\base\Plugin
    */
     const FILE_NAME = 'assets-upload';
 
+    const REPLACE_FILE_NAME = 'replaceFile';
+
 
   /**
    * Plugin constructor.
@@ -75,7 +78,7 @@ class Plugin extends \craft\base\Plugin
             $request->getHeaders()->has('content-disposition') &&
             $request->getHeaders()->has('content-range') &&
             is_array($_FILES) &&
-            isset($_FILES[self::FILE_NAME])
+            (isset($_FILES[self::FILE_NAME]) || isset($_FILES[self::REPLACE_FILE_NAME]))
         ) {
             if (! $this->processUpload($request)) {
                 die();
@@ -224,7 +227,7 @@ class Plugin extends \craft\base\Plugin
     private function processUpload(Request $request)
     {
         $headers          = $request->getHeaders();
-        $upload           = $_FILES[self::FILE_NAME];
+        $upload           = $_FILES[self::FILE_NAME] ?? $_FILES[self::REPLACE_FILE_NAME];
         $uploadedFile     = $upload['tmp_name'];
         $originalFileName = $this->getContentDisposition($headers);
 
@@ -251,7 +254,7 @@ class Plugin extends \craft\base\Plugin
     protected function uploadLocal(Request $request)
     {
         $headers          = $request->getHeaders();
-        $upload           = $_FILES[self::FILE_NAME];
+        $upload           = $_FILES[self::FILE_NAME] ?? $_FILES[self::REPLACE_FILE_NAME];
         $uploadedFile     = $upload['tmp_name'];
         $originalFileName = $this->getContentDisposition($headers);
 
@@ -289,16 +292,16 @@ class Plugin extends \craft\base\Plugin
     protected function uploadBucket(Request $request)
     {
         $headers          = $request->getHeaders();
-        $upload           = $_FILES[self::FILE_NAME];
+        $upload           = $_FILES[self::FILE_NAME] ?? $_FILES[self::REPLACE_FILE_NAME];
         $uploadedFile     = $upload['tmp_name'];
         $originalFileName = $this->getContentDisposition($headers);
 
         list($chunkOffset, $totalSize) = $this->getContentRange($headers);
 
-        $bucket = Craft::parseEnv($this->getSettings()->useBucket);
-        $keyId = Craft::parseEnv($this->getSettings()->keyId);
-        $secret = Craft::parseEnv($this->getSettings()->secret);
-        $region = Craft::parseEnv($this->getSettings()->region);
+        $bucket = App::parseEnv($this->getSettings()->useBucket);
+        $keyId = App::parseEnv($this->getSettings()->keyId);
+        $secret = App::parseEnv($this->getSettings()->secret);
+        $region = App::parseEnv($this->getSettings()->region);
 
         $client = new S3Client([
             'version'     => 'latest',
